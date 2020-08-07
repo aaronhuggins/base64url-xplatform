@@ -1,28 +1,21 @@
-# Managed Service Daemon
+# Base64Url Cross-Platform
 
-A wrapper for spawning child processes as managed daemons in Node, with typescript definitions included.
+A cross-platform implementation of base64 URL, with typescript definitions included.
 
 ## Usage
 
-Install via [NPM](https://www.npmjs.com/package/managed-service-daemon) and require in your project.
+Install via [NPM](https://www.npmjs.com/package/base64url-xplatform) and require in your project. There is also an ESM export, for use with browser or Deno.
 
 ```js
-const gulp = require('gulp')
-const shell = require('gulp-shell')
-const { Service } = require('managed-service-daemon')
-const workingDir = './.azurite'
-const azuriteBlob = new Service({
-  name: 'azuriteBlob',
-  command: 'node',
-  args: [path.normalize('./node_modules/azurite/dist/src/blob/main'), '-s', '-l', workingDir],
-  startWait: 500,
-  onStart: () => fs.mkdirSync(workingDir),
-  onStop: () => fs.rmdirSync(workingDir, { recursive: true })
-})
-
-exports.mocha = async function mocha () {
-  return shell.task(['mocha'], { ignoreErrors: true })()
+const { Base64Url } = require('base64url-xplatform')
+const header = { alg: 'RS256' }
+const claimsSet = {
+  iss: 'iss',
+  sub: 'sub',
+  aud: 'aud',
+  exp: Math.floor(Date.now() / 1000) + 60 * 5
 }
-
-exports.test = gulp.series(azuriteBlob.start, exports.mocha, azuriteBlob.stop)
+const encodedJWTHeader = Base64Url.encode(JSON.stringify(header))
+const encodedJWTClaimsSet = Base64Url.encode(JSON.stringify(claimsSet))
+const existingString = encodedJWTHeader + '.' + encodedJWTClaimsSet
 ```
