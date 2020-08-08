@@ -18,7 +18,7 @@ export class BufferShim {
     } else if (typeof 'string' === 'string') {
       throw new Error('Unsupported encoding ' + encoding)
     } else if (BufferShim.isNodeEnv && Buffer.isBuffer(input)) {
-      this.buffer = input.buffer
+      this.buffer = this.toArrayBuffer(input)
     } else {
       this.buffer = input as ArrayBuffer
     }
@@ -27,7 +27,8 @@ export class BufferShim {
   buffer: ArrayBuffer
 
   private atob (input: string) {
-    if (BufferShim.isNodeEnv) return Buffer.from(input, 'base64').buffer
+    if (BufferShim.isNodeEnv) return this.toArrayBuffer(Buffer.from(input, 'base64'))
+
     const getByteLength = (str: string) => {
       let bytes = str.length * 0.75
 
@@ -62,7 +63,7 @@ export class BufferShim {
   }
 
   private btoa (buffer: ArrayBuffer) {
-    if (BufferShim.isNodeEnv) return Buffer.from(buffer).toString('base64')
+    if (BufferShim.isNodeEnv) return this.toNodeBuffer(buffer).toString('base64')
 
     let base64 = ''
     let bytes = new Uint8Array(buffer)
@@ -113,7 +114,7 @@ export class BufferShim {
   }
 
   private fromUTF8Array (buffer: ArrayBuffer) {
-    if (BufferShim.isNodeEnv) return Buffer.from(buffer).toString('utf8')
+    if (BufferShim.isNodeEnv) return this.toNodeBuffer(buffer).toString('utf8')
 
     let bytes = new Uint8Array(buffer)
     let out = []
@@ -149,7 +150,7 @@ export class BufferShim {
   }
 
   private toUTF8Array (input: string) {
-    if (BufferShim.isNodeEnv) return Buffer.from(input, 'utf8').buffer
+    if (BufferShim.isNodeEnv) return this.toArrayBuffer(Buffer.from(input, 'utf8'))
 
     let utf8 = []
 
@@ -179,18 +180,35 @@ export class BufferShim {
     return new Uint8Array(utf8).buffer
   }
 
+  private toArrayBuffer (buffer: Buffer) {
+    const arrayBuffer = new ArrayBuffer(buffer.length)
+    const view = new Uint8Array(arrayBuffer)
+
+    for (let i = 0; i < buffer.length; i += 1) {
+      view[i] = buffer[i]
+    }
+    return arrayBuffer
+  }
+
+  private toNodeBuffer (buffer: ArrayBuffer) {
+    if (!BufferShim.isNodeEnv) return new Uint8Array(buffer)
+
+    const nodeBuffer = Buffer.alloc(buffer.byteLength)
+    const view = new Uint8Array(buffer)
+
+    for (let i = 0; i < nodeBuffer.length; i += 1) {
+      nodeBuffer[i] = view[i]
+    }
+
+    return nodeBuffer
+  }
+
   toUint8Array () {
     return new Uint8Array(this.buffer)
   }
 
   toBuffer () {
-    if (BufferShim.isNodeEnv) return Buffer.from(this.buffer)
-
-    return this.toUint8Array()
-  }
-
-  inspect () {
-    return this.toBuffer()
+    return this.toNodeBuffer(this.buffer)
   }
 
   toString (encoding: 'utf8' | 'utf-8' | 'base64' = 'utf8') {
