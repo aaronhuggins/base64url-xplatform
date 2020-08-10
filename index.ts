@@ -1,5 +1,7 @@
 import { BufferShim } from 'buffer-esm'
 
+export { BufferShim } from 'buffer-esm'
+
 export class Base64Url {
   static encode (input: string | Buffer | ArrayBuffer, encoding: 'utf8' | 'utf-8' = 'utf8') {
     if (typeof input === 'string') return Base64Url.fromBase64(Buffer.from(input, encoding).toString('base64'))
